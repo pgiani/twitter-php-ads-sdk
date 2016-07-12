@@ -1,5 +1,5 @@
 {
-    "name": "pgiani/twitter-php-ads-sdk",
+    "name": "Hborras/twitter-php-ads-sdk",
     "type": "library",
     "description": "A Twitter supported and maintained Ads API SDK for PHP",
     "keywords": ["twitter", "api", "ads", "oauth", "rest", "social", "twitter api", "twitter oauth"],
@@ -24,7 +24,7 @@
     },
     "autoload": {
         "psr-4": {
-            "hborras\\TwitterAdsSDK\\": "src"
+            "Hborras\\TwitterAdsSDK\\": "src"
         }
     }
 }
