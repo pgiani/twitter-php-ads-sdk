@@ -32,6 +32,30 @@ class Analytics extends Resource
         return $this->all_stats($this->getAccount(), [$this->getId()], $metricGroups, $params);
     }
 
+    public static function get_job (Account $account,  $params = [])
+    {
+        pr ($params );
+        $count = isset($params['count']) ? $params['count'] : null ;
+        $cursor = isset($params['cursor']) ? $params['count'] : null ;
+        $job_ids = isset($params['job_ids']) ? implode(",", $params['job_ids']) : null ;
+
+
+        $params = [  'job_ids' => $job_ids, ];
+        if (!is_null($count)) {
+            $params['count'] = $count;
+        }
+        if (!is_null($cursor)) {
+            $params['cursor'] = $cursor;
+        }
+
+        $resource = str_replace(static::RESOURCE_REPLACE, $account->getId(), static::RESOURCE_STATS_JOBS);
+        $request = $account->getTwitterAds()->get($resource, $params);
+
+        return $request->data;
+
+    }
+
+
 
     public static function all_stats(Account $account, $ids, $metricGroups, $params = [])
     {
