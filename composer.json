@@ -1,5 +1,5 @@
 {
-    "name": "Hborras/twitter-php-ads-sdk",
+    "name": "hborras/twitter-php-ads-sdk",
     "type": "library",
     "description": "A Twitter supported and maintained Ads API SDK for PHP",
     "keywords": ["twitter", "api", "ads", "oauth", "rest", "social", "twitter api", "twitter oauth"],
@@ -7,13 +7,13 @@
     "authors": [
         {
             "name": "Hector Borras",
-            "email": "pgiani@gmail.com",
+            "email": "hborrasaleixandre@gmail.com",
             "role": "Developer"
         }
     ],
     "support": {
-        "source": "https://github.com/pgiani/twitter-php-ads-sdk",
-        "issues": "https://github.com/pgiani/twitter-php-ads-sdk/issues"
+        "source": "https://github.com/hborras/twitter-php-ads-sdk",
+        "issues": "https://github.com/hborras/twitter-php-ads-sdk/issues"
     },
     "require": {
         "php": ">=5.5.0",

@@ -20,6 +20,7 @@ class Analytics extends Resource
     const ANALYTICS_METRIC_GROUPS_LIFE_TIME_VALUE_MOBILE_CONVERSION = "LIFE_TIME_VALUE_MOBILE_CONVERSION";
     const ENTITY                                                    = "";
     const RESOURCE_STATS                                            = 'stats/accounts/{account_id}/';
+    const RESOURCE_STATS_JOBS                                       = 'stats/jobs/accounts/{account_id}/';
 
     /**
      * Pulls a list of metrics for the current object instance.
@@ -55,10 +56,14 @@ class Analytics extends Resource
 
         if (!is_null($segmentationType)) {
             $params['segmentation_type'] = $segmentationType;
+            $resource = str_replace(static::RESOURCE_REPLACE, $account->getId(), static::RESOURCE_STATS_JOBS);
+            $request = $account->getTwitterAds()->post($resource, $params);
+        } else{
+            $resource = str_replace(static::RESOURCE_REPLACE, $account->getId(), static::RESOURCE_STATS);
+            $request = $account->getTwitterAds()->get($resource, $params);
+
         }
 
-        $resource = str_replace(static::RESOURCE_REPLACE, $account->getId(), static::RESOURCE_STATS);
-        $request = $account->getTwitterAds()->get($resource, $params);
 
         return $request->data;
     }
