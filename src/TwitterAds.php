@@ -18,6 +18,7 @@ use Hborras\TwitterAdsSDK\TwitterAds\Errors\RateLimit;
 use Hborras\TwitterAdsSDK\TwitterAds\Errors\ServerError;
 use Hborras\TwitterAdsSDK\TwitterAds\Errors\ServiceUnavailable;
 use Hborras\TwitterAdsSDK\Util\JsonDecoder;
+use GuzzleHttp;
 
 /**
  * TwitterAds class for interacting with the Twitter API.
@@ -224,11 +225,12 @@ class TwitterAds extends Config
      * @param string $path
      * @param array $parameters
      *
+     * @param array $headers
      * @return array|object
      */
-    public function post($path, array $parameters = [])
+    public function post($path, array $parameters = [], array $headers = [])
     {
-        return $this->http('POST', !$this->sandbox ? self::API_HOST : self::API_HOST_SANDBOX, $path, $parameters);
+        return $this->http('POST', !$this->sandbox ? self::API_HOST : self::API_HOST_SANDBOX, $path, $parameters, $headers);
     }
 
     /**
@@ -358,14 +360,19 @@ class TwitterAds extends Config
      * @throws ServerError
      * @throws ServiceUnavailable
      */
-    private function http($method, $host, $path, array $parameters)
+    private function http($method, $host, $path, array $parameters, $headers = [])
     {
         $this->method = $method;
         $this->resource = $path;
         $this->resetLastResponse();
-        $url = sprintf('%s/%s/%s', $host, self::API_VERSION, $path);
+        if($path == 'https://ton.twitter.com/1.1/ton/bucket/ta_partner'){
+            $url = $path;
+        } else {
+            $url = sprintf('%s/%s/%s', $host, self::API_VERSION, $path);
+        }
+
         $this->response->setApiPath($path);
-        $result = $this->oAuthRequest($url, $method, $parameters);
+        $result = $this->oAuthRequest($url, $method, $parameters, $headers);
         $response = JsonDecoder::decode($result, $this->decodeJsonAsArray);
         $this->response->setBody($response);
         if ($this->getLastHttpCode() > 399) {
@@ -413,11 +420,12 @@ class TwitterAds extends Config
      * @param string $method
      * @param array $parameters
      *
+     * @param array $headers
      * @return string
-     *
      * @throws TwitterAdsException
+     * @throws TwitterOAuthException
      */
-    private function oAuthRequest($url, $method, array $parameters)
+    private function oAuthRequest($url, $method, array $parameters, $headers = [])
     {
         $request = Request::fromConsumerAndToken($this->consumer, $this->token, $method, $url, $parameters);
         if (array_key_exists('oauth_callback', $parameters)) {
@@ -431,7 +439,7 @@ class TwitterAds extends Config
             $authorization = 'Authorization: Bearer '.$this->bearer;
         }
 
-        return $this->request($request->getNormalizedHttpUrl(), $method, $authorization, $parameters);
+        return $this->request($request->getNormalizedHttpUrl(), $method, $authorization, $parameters, $headers);
     }
 
     /**
@@ -442,19 +450,19 @@ class TwitterAds extends Config
      * @param string $authorization
      * @param array $postfields
      *
+     * @param array $headers
      * @return string
-     *
      * @throws TwitterAdsException
      */
-    private function request($url, $method, $authorization, $postfields)
+    private function request($url, $method, $authorization, $postfields, $headers = [])
     {
         /* Curl settings */
         $options = [
-            // CURLOPT_VERBOSE => true,
+            CURLOPT_VERBOSE => false,
             CURLOPT_CAINFO => __DIR__.DIRECTORY_SEPARATOR.'cacert.pem',
             CURLOPT_CONNECTTIMEOUT => $this->connectionTimeout,
             CURLOPT_HEADER => true,
-            CURLOPT_HTTPHEADER => ['Accept: application/json', $authorization, 'Expect:'],
+            CURLOPT_HTTPHEADER => array_merge(['Accept: application/json', $authorization, 'Expect:'],$headers),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_SSL_VERIFYPEER => true,
@@ -477,7 +485,12 @@ class TwitterAds extends Config
                 break;
             case 'POST':
                 $options[CURLOPT_POST] = true;
-                $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
+                if(isset($postfields['raw'])){
+                    $options[CURLOPT_POSTFIELDS] = $postfields['raw'];
+                } else {
+                    $options[CURLOPT_POSTFIELDS] = Util::buildHttpQuery($postfields);
+                }
+
                 break;
             case 'DELETE':
                 $options[CURLOPT_CUSTOMREQUEST] = 'DELETE';
@@ -494,20 +507,16 @@ class TwitterAds extends Config
         $curlHandle = curl_init();
         curl_setopt_array($curlHandle, $options);
         $response = curl_exec($curlHandle);
-
         // Throw exceptions on cURL errors.
         if (curl_errno($curlHandle) > 0) {
             throw new TwitterAdsException(curl_error($curlHandle), curl_errno($curlHandle), null, null);
         }
-
         $this->response->setHttpCode(curl_getinfo($curlHandle, CURLINFO_HTTP_CODE));
         $parts = explode("\r\n\r\n", $response);
         $responseBody = array_pop($parts);
         $responseHeader = array_pop($parts);
         $this->response->setHeaders($this->parseHeaders($responseHeader));
-
         curl_close($curlHandle);
-
         return $responseBody;
     }
 
